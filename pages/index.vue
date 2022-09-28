@@ -2,10 +2,21 @@
   <main class="px-20 py-10 bg-orange-100 h-screen overflow-hidden overflow-y-scroll">
     <h4 class="text-center text-3xl font-semibold text-orange-800">Products</h4>
     <div class="flex justify-center items-center mt-4">
-      <input type="text" placeholder="Search Products..." class="w-full border border-gray-200 rounded p-2">
+      <select
+        id="countries"
+        @change="selectCategory($event)"
+        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+      >
+        <option selected disabled>Choose a category</option>
+        <option
+          v-for="(i, index) in categories"
+          :key="index">
+            {{ i }}
+          </option>
+      </select>
     </div>
     <div class="flex flex-col md:flex-col lg:flex-row flex-wrap mt-2 w-full justify-center gap-2">
-      <div class="relative w-full md:w-1/2 lg:w-[24%] mt-3" v-for="product in allCats" :key="product.id">
+      <div class="relative w-full md:w-1/2 lg:w-[24%] mt-3" v-for="product in filteredList" :key="product.name">
         <img
           :src="product.image"
           class="object-cover w-full md:w-full h-full md:h-full lg:h-64"
@@ -21,7 +32,7 @@
     </div>
     <div class="mt-16 mb-6">
       <div class="flex justify-center items-center">
-        <div v-for="item in pages" :key="item">
+        <div v-for="(item, index) in pages" :key="index">
           <span
             @click="onClickPage(item.name)"
             :class="[
@@ -50,6 +61,7 @@ export default Vue.extend({
     perPage: 10,
     currentPage: 1,
     totalPages: 0,
+    category: '',
     pagination: [
       {
         page: 1
@@ -69,6 +81,19 @@ export default Vue.extend({
     await this.fetchAllCatImages(data)
   },
   computed: {
+    filteredList() {
+      if(this.category !== '') {
+        return this.allCats.filter(c => c.catname === this.category)
+      } else {
+        return [...new Set(this.allCats)]
+      }
+    },
+    categories() {
+      const list = this.allCats ? this.allCats.map((item: any) => {
+        return item.catname
+      }) : []
+      return [...new Set(list)];
+    },
     startPage() {
       // When on the first page
       if (this.currentPage === 1) {
@@ -104,6 +129,9 @@ export default Vue.extend({
     loadFakeImage() {
       return 'https://res.cloudinary.com/doigweh6x/image/upload/v1658225182/cld-sample-2.jpg'
     },
+    selectCategory(event: any) {
+      this.category = event.target.value
+    },
     fetchAllCatImages(data: any) {
       return new Promise((resolve, reject) => {
         http.get('products', {
@@ -112,15 +140,11 @@ export default Vue.extend({
           }
         })
           .then((response: any) => {
-            console.log(response);
             this.allCats = response.data
-            console.log('all cats', this.allCats);
             this.totalPages = response.total
             resolve(response);
           })
           .catch((error: any) => {
-            console.log('error: ', error);
-            
             reject(error);
           })
       })
